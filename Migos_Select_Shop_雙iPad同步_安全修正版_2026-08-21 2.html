@@ -1,0 +1,1026 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<!-- Migo's Select Shop 雙 iPad 安全同步修正版 2026-08-21；原正式版基底 2026-08-09 -->
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Migo's Select Shop｜雙 iPad 安全同步修正版</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;background:#fff7fa;color:#222}
+header{background:linear-gradient(135deg,#d989a8,#c96f94);color:#fff;padding:18px 22px;font-size:22px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
+small{font-weight:400;opacity:.8}.app{display:grid;grid-template-columns:190px 1fr;min-height:calc(100vh - 64px)}
+nav{background:#fffafb;border-right:1px solid #f0c8d8;padding:14px} nav button{width:100%;padding:13px;margin-bottom:8px;border:0;border-radius:10px;text-align:left;font-size:15px;cursor:pointer}
+nav .active{background:#d989a8;color:white} main{padding:20px}.hidden{display:none!important}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}.toolbar input,.toolbar select{padding:11px;border:1px solid #e7b5c8;border-radius:9px;min-width:180px}
+.btn{border:0;border-radius:9px;padding:11px 15px;cursor:pointer;font-weight:700}.primary{background:linear-gradient(135deg,#d989a8,#c96f94);color:#fff}.light{background:#f8dce7}.danger{background:#eee}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}.card{background:#fffafb;border:1px solid #f0c8d8;border-radius:14px;padding:14px}
+.card img{width:100%;height:190px;object-fit:cover;border-radius:10px;background:#eee}.card h3{margin:10px 0 5px;font-size:17px}.price{font-size:21px;font-weight:800}
+.sizeBtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.sizeBtns button{border:1px solid #bbb;background:#fff;border-radius:8px;padding:7px 9px;cursor:pointer}.sizeBtns button:disabled{opacity:.35}
+.cart{background:#fffafb;border-radius:14px;padding:16px;margin-top:18px}.row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #f4d7e2}.total{text-align:right;font-size:25px;font-weight:800;padding-top:12px}
+.form{background:#fffafb;padding:18px;border-radius:14px;max-width:800px}.form label{display:block;font-weight:700;margin-top:10px}.form input{width:100%;padding:11px;border:1px solid #e7b5c8;border-radius:9px;margin-top:5px}
+.stockTable{width:100%;border-collapse:collapse;background:#fff}.stockTable th,.stockTable td{padding:10px;border-bottom:1px solid #f4d7e2;text-align:left}
+.note{background:#fff0f6;border:1px solid #efbfd2;padding:12px;border-radius:10px;margin-bottom:14px}
+@media(max-width:750px){.app{grid-template-columns:100px 1fr}nav button{font-size:12px;padding:10px}main{padding:10px}.grid{grid-template-columns:1fr}}
+
+header{box-shadow:0 3px 12px rgba(217,137,168,.25)}
+nav button{background:#fff0f6;color:#7a4058}
+nav button:hover{background:#f9dbe7}
+.price{color:#b6557c}
+.btn.primary{box-shadow:0 2px 8px rgba(217,137,168,.25)}
+.card{box-shadow:0 2px 10px rgba(217,137,168,.08)}
+
+.loginOverlay{position:fixed;inset:0;background:rgba(255,247,250,.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.loginBox{width:min(430px,100%);background:#fffafb;border:1px solid #f0c8d8;border-radius:20px;padding:26px;box-shadow:0 12px 40px rgba(190,100,140,.18)}
+.loginBox h1{text-align:center;margin:0 0 6px;color:#a64f73}.loginBox p{text-align:center;color:#777}
+.loginBox input{width:100%;padding:12px;border:1px solid #e7b5c8;border-radius:10px;margin:6px 0 12px}
+.userBadge{font-size:14px;font-weight:700;background:#fff0f6;color:#7a4058;padding:7px 10px;border-radius:999px}
+.adminTable{width:100%;border-collapse:collapse;background:#fff}.adminTable th,.adminTable td{padding:10px;border-bottom:1px solid #f4d7e2;text-align:left}
+
+.dataTable{width:100%;border-collapse:collapse;background:#fff}
+.dataTable th,.dataTable td{padding:10px;border-bottom:1px solid #f4d7e2;text-align:left}
+</style></head>
+<body>
+
+<script>
+/* iPad / Sitecase safe storage compatibility layer */
+(function () {
+  function memoryStore() {
+    var data = {};
+    return {
+      getItem: function (k) { return Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null; },
+      setItem: function (k, v) { data[k] = String(v); },
+      removeItem: function (k) { delete data[k]; }
+    };
+  }
+
+  function safeStore(which) {
+    try {
+      var s = window[which];
+      var key = "__migo_storage_test__";
+      s.setItem(key, "1");
+      s.removeItem(key);
+      return s;
+    } catch (e) {
+      return memoryStore();
+    }
+  }
+
+  window.MIGO_STORE = safeStore("localStorage");
+  window.MIGO_SESSION = safeStore("sessionStorage");
+})();
+</script>
+
+<div id="loginOverlay" class="loginOverlay">
+  <div class="loginBox">
+    <h1>🌸 Migo's Select Shop</h1>
+    <p>管理員登入</p>
+    <label>管理員帳號</label><input id="loginUser" autocomplete="username" placeholder="請輸入帳號">
+    <label>密碼</label><input id="loginPass" type="password" autocomplete="current-password" placeholder="請輸入密碼">
+    <button class="btn primary" style="width:100%" onclick="login()">登入</button>
+    <p style="font-size:12px">首次使用預設帳號：admin　密碼：1234<br>登入後請到「管理員」新增自己的帳號。</p>
+  </div>
+</div>
+<header><span>🌸 Migo's Select Shop｜女裝・童裝</span><span style="display:flex;gap:8px;align-items:center"><span id="syncBadge" class="userBadge" onclick="showSyncDiagnostic()" style="cursor:pointer">☁️ 連線中</span><span id="userBadge" class="userBadge">未登入</span><button class="btn light" onclick="logout()">登出</button></span></header>
+<div class="app">
+<nav>
+<button class="active" onclick="page('pos',this)">🛒 結帳</button>
+<button onclick="page('add',this)">➕ 新增商品</button>
+<button onclick="page('manage',this)">👕 商品管理</button>
+<button onclick="page('stock',this)">📦 庫存</button>
+<button onclick="page('report',this)">📊 今日報表</button><button onclick="page('expenses',this)">💸 支出</button><button onclick="page('customers',this)">👤 客戶</button><button onclick="page('suppliers',this)">🚚 廠商</button><button onclick="page('admins',this)">🔐 管理員</button><button onclick="page('backup',this)">💾 備份</button>
+</nav>
+<main>
+<section id="pos">
+<h2>收銀結帳</h2>
+<div class="toolbar"><input id="search" placeholder="輸入貨號／商品名稱" oninput="renderProducts()"><select id="seasonFilter" onchange="renderProducts()" style="padding:11px;border:1px solid #e7b5c8;border-radius:9px"><option value="">全部季節</option><option>春季</option><option>夏季</option><option>秋季</option><option>冬季</option><option>四季款</option></select><button class="btn light" onclick="document.getElementById('search').focus()">⌨️ 搜尋貨號</button></div>
+<div id="productGrid" class="grid"></div>
+<div class="cart"><h3>購物車</h3>
+<div class="toolbar" style="background:#fff7fa;padding:10px;border-radius:10px">
+<select id="discountMode" onchange="renderCart()" style="padding:10px;border:1px solid #e7b5c8;border-radius:9px">
+<option value="fixed">🏷️ 固定特價（使用商品售價）</option>
+<option value="percent">✨ 臨時折扣％</option>
+<option value="amount">💰 臨時折抵金額</option>
+</select>
+<input id="discountValue" type="number" min="0" placeholder="折扣數值" oninput="renderCart()" style="max-width:150px">
+<span id="discountHint" style="font-size:13px;color:#7a4058"></span>
+</div>
+<div class="toolbar"><select id="checkoutCustomer" style="padding:11px;border:1px solid #e7b5c8;border-radius:9px;min-width:240px"><option value="">👤 一般客戶／未指定</option></select></div><div id="cart"></div><div style="text-align:right;padding-top:12px">商品小計：$<span id="subtotal">0</span><br>
+<span id="discountLine">折扣：-$<span id="discountAmount">0</span></span></div>
+<div class="total">應收 $<span id="total">0</span></div>
+<div class="toolbar" style="justify-content:flex-end;margin-top:12px"><button class="btn light" onclick="clearCart()">清空</button><button class="btn light" onclick="checkout('cash')">💵 現金結帳</button><button class="btn primary" onclick="checkout('card')">💳 刷卡結帳</button></div></div>
+</section>
+
+<section id="add" class="hidden">
+<h2>新增商品</h2>
+<div class="note">商品會儲存在這台 MacBook 的瀏覽器中。新增後關閉再打開仍會保留；若清除 Safari 網站資料，商品資料可能被刪除。</div>
+<div class="form">
+<label>商品照片</label><input id="aImage" type="file" accept="image/*">
+<label>貨號</label><input id="aSku" placeholder="例如 Z123456">
+<label>商品分類</label><select id="aCategory" style="width:100%;padding:11px;border:1px solid #e7b5c8;border-radius:9px;margin-top:5px"><option>童裝</option><option>女裝</option><option>配件</option><option>其他</option></select><label>商品名稱</label><input id="aName" placeholder="例如 童裝條紋上衣／女裝洋裝"><label>季節分類</label><select id="aSeason" style="width:100%;padding:11px;border:1px solid #e7b5c8;border-radius:9px;margin-top:5px"><option>春季</option><option>夏季</option><option>秋季</option><option>冬季</option><option>四季款</option></select>
+<label>售價</label><input id="aPrice" type="number" placeholder="390">
+<label>成本</label><input id="aCost" type="number" placeholder="例如 180">
+<label>供應廠商</label><select id="aSupplier" style="width:100%;padding:11px;border:1px solid #e7b5c8;border-radius:9px;margin-top:5px"><option value="">未指定</option></select>
+<label>顏色</label><input id="aColor" placeholder="例如 米色">
+<label>尺寸（用逗號分隔）</label><input id="aSizes" value="90,100,110,120,130">
+<label>各尺寸庫存</label><input id="aStock" type="number" value="1" min="0">
+<div class="toolbar" style="margin-top:15px"><button class="btn primary" onclick="addProduct()">儲存商品</button></div>
+</div></section>
+
+<section id="manage" class="hidden"><h2>商品管理</h2><div id="manageGrid" class="grid"></div></section>
+<section id="stock" class="hidden"><h2>庫存管理</h2><div id="stockWrap"></div></section>
+<section id="report" class="hidden"><h2>今日報表</h2><div class="note"><b>交易筆數修正：</b>歷史報表現在會依每筆紀錄中的「交易筆數」加總。舊備份若只有每日總計，也會保留原本的交易筆數，不再誤顯示成 1 筆或 2 筆。</div><div class="grid">
+<div class="card"><h3>今日營業額</h3><div class="price">$<span id="sales">0</span></div></div>
+<div class="card"><h3>銷售件數</h3><div class="price"><span id="units">0</span> 件</div></div>
+<div class="card"><h3>交易筆數</h3><div class="price"><span id="txns">0</span> 筆</div></div><div class="card"><h3>現金收入</h3><div class="price">$<span id="cashSales">0</span></div></div><div class="card"><h3>刷卡收入</h3><div class="price">$<span id="cardSales">0</span></div></div>
+<div class="card"><h3>銷售成本</h3><div class="price">$<span id="costSales">0</span></div></div>
+<div class="card"><h3>毛利</h3><div class="price">$<span id="profitSales">0</span></div></div>
+<div class="card"><h3>毛利率</h3><div class="price"><span id="profitRate">0</span>%</div></div>
+<div class="card"><h3>今日支出</h3><div class="price">$<span id="expenseSales">0</span></div></div>
+<div class="card"><h3>扣除支出後</h3><div class="price">$<span id="netProfit">0</span></div></div>
+</div><div class="card" style="margin-top:18px"><h3>📅 每日／每月營業報表</h3><div class="toolbar"><label>每日：<input id="dailyReportDate" type="date" onchange="renderPeriodReports()"></label><label>每月：<input id="monthlyReportMonth" type="month" onchange="renderPeriodReports()"></label></div><div id="dailyReportBox"></div><div id="monthlyReportBox" style="margin-top:18px"></div>
+<div class="card" style="margin-top:18px">
+<h3>🗓️ 歷史每日報表</h3>
+<div class="toolbar">
+<label>開始日期：<input id="historyStartDate" type="date" onchange="renderHistoricalDailyReports()"></label>
+<label>結束日期：<input id="historyEndDate" type="date" onchange="renderHistoricalDailyReports()"></label>
+<button class="btn light" onclick="setHistoryThisMonth()">本月</button>
+</div>
+<div id="historicalDailyBox"></div>
+</div></div></section>
+
+<section id="admins" class="hidden">
+<h2>管理員帳號</h2>
+<div class="form">
+<label>新增管理員帳號</label><input id="newAdminUser" placeholder="例如 migo01">
+<label>管理員名稱</label><input id="newAdminName" placeholder="例如 店長">
+<label>密碼</label><input id="newAdminPass" type="password" placeholder="請設定密碼">
+<div class="toolbar" style="margin-top:15px"><button class="btn primary" onclick="addAdmin()">新增管理員</button></div>
+</div>
+<div style="margin-top:18px" id="adminList"></div>
+</section>
+
+
+<section id="expenses" class="hidden">
+<h2>支出管理</h2>
+<div class="form">
+<label>日期</label><input id="eDate" type="date">
+<label>支出分類</label>
+<select id="eCategory" style="width:100%;padding:11px;border:1px solid #e7b5c8;border-radius:9px;margin-top:5px">
+<option>進貨</option><option>運費</option><option>包材</option><option>租金</option><option>水電</option><option>廣告</option><option>薪資</option><option>其他</option>
+</select>
+<label>金額</label><input id="eAmount" type="number" min="0" placeholder="例如 1200">
+<label>廠商／對象</label><input id="ePayee" placeholder="例如 XX服飾批發">
+<label>備註</label><input id="eNote" placeholder="支出說明">
+<div class="toolbar" style="margin-top:15px"><button class="btn primary" onclick="addExpense()">新增支出</button></div>
+</div>
+<div style="margin-top:18px" id="expenseSummary"></div>
+<div style="margin-top:12px" id="expenseList"></div>
+</section>
+
+<section id="customers" class="hidden">
+<h2>客戶資料</h2>
+<div class="form">
+<label>姓名</label><input id="cName" placeholder="客戶姓名">
+<label>手機</label><input id="cPhone" placeholder="09xx-xxx-xxx">
+<label>備註</label><input id="cNote" placeholder="例如 VIP、常買童裝">
+<div class="toolbar" style="margin-top:15px"><button class="btn primary" onclick="addCustomer()">新增客戶</button></div>
+</div>
+<div style="margin-top:18px" id="customerList"></div>
+</section>
+
+<section id="suppliers" class="hidden">
+<h2>廠商資料</h2>
+<div class="form">
+<label>廠商名稱</label><input id="sName" placeholder="廠商名稱">
+<label>聯絡人</label><input id="sContact" placeholder="聯絡人">
+<label>電話</label><input id="sPhone" placeholder="電話">
+<label>統一編號</label><input id="sTaxId" placeholder="統編">
+<label>地址</label><input id="sAddress" placeholder="廠商地址">
+<label>付款條件</label><input id="sTerms" placeholder="例如 月結30天／現金">
+<label>備註</label><input id="sNote" placeholder="例如 女裝批發">
+<div class="toolbar" style="margin-top:15px"><button class="btn primary" onclick="addSupplier()">新增廠商</button></div>
+</div>
+<div style="margin-top:18px" id="supplierList"></div>
+</section>
+
+<section id="backup" class="hidden">
+<h2>資料備份</h2>
+<div class="note"><b>舊備份相容：</b>可嘗試匯入先前版本產生的備份檔。系統會自動補齊成本、季節、廠商、支出、客戶消費與歷史報表等新版欄位；舊備份沒有的資料會使用安全預設值。</div><div class="note"><b>☁️ 雙 iPad 安全同步：</b>新增商品會先確認 Supabase 寫入成功；失敗時不會再讓商品突然消失。商品、庫存與銷售紀錄會同步到 Supabase。客戶、廠商、支出與管理員目前仍保存在本機；下一版可再接上雲端資料表。</div><div class="note"><b>8月8日匯入修正：</b>若舊備份只有「當日營業總額」而沒有歷史交易明細，匯入時會自動建立 2026-08-08 的歷史報表資料，匯入後立即顯示 8/8。</div><div class="form">
+<p>可將商品、庫存、營業報表、客戶、廠商、支出、客戶消費紀錄與管理員帳號一起備份成 JSON 檔；備份檔名會自動加入日期＋時間。</p>
+<div class="toolbar">
+<button class="btn primary" onclick="downloadBackup()">下載日期＋時間備份檔</button>
+<label class="btn light" style="display:inline-block;cursor:pointer">匯入備份檔<input id="restoreFile" type="file" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)"></label>
+</div>
+<div class="note">建議每天打烊後備份一次，並把備份檔另外存到 iCloud Drive、USB 或其他雲端空間。<br><b>最近備份：</b><span id="lastBackup">尚未備份</span></div>
+</div>
+</section>
+</main></div>
+
+<div id="syncDiagnostic" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10000;padding:20px;overflow:auto">
+  <div style="max-width:760px;margin:40px auto;background:white;border-radius:18px;padding:22px">
+    <h2 style="margin-top:0">☁️ Supabase 連線檢查</h2>
+    <p>這個畫面只用來檢查連線，不會刪除商品或銷售資料。</p>
+    <div id="syncDiagnosticResult" class="note">準備檢查…</div>
+    <div class="toolbar">
+      <button class="btn primary" onclick="runSyncDiagnostic()">重新檢查</button>
+      <button class="btn light" onclick="document.getElementById('syncDiagnostic').classList.add('hidden')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* iPad/WKWebView compatibility: expose element IDs as globals, as desktop Safari does. */
+(function(){
+  var ids=['aCategory', 'aColor', 'aCost', 'aImage', 'aName', 'aPrice', 'aSeason', 'aSizes', 'aSku', 'aStock', 'aSupplier', 'add', 'adminList', 'admins', 'backup', 'cName', 'cNote', 'cPhone', 'cardSales', 'cart', 'cashSales', 'checkoutCustomer', 'costSales', 'customerList', 'customers', 'dailyReportBox', 'dailyReportDate', 'discountAmount', 'discountHint', 'discountLine', 'discountMode', 'discountValue', 'eAmount', 'eCategory', 'eDate', 'eNote', 'ePayee', 'expenseList', 'expenseSales', 'expenseSummary', 'expenses', 'historicalDailyBox', 'historyEndDate', 'historyStartDate', 'lastBackup', 'loginOverlay', 'loginPass', 'loginUser', 'manage', 'manageGrid', 'monthlyReportBox', 'monthlyReportMonth', 'netProfit', 'newAdminName', 'newAdminPass', 'newAdminUser', 'pos', 'productGrid', 'profitRate', 'profitSales', 'report', 'restoreFile', 'sAddress', 'sContact', 'sName', 'sNote', 'sPhone', 'sTaxId', 'sTerms', 'sales', 'search', 'seasonFilter', 'stock', 'stockWrap', 'subtotal', 'supplierList', 'suppliers', 'total', 'txns', 'units', 'userBadge'];
+  for(var i=0;i<ids.length;i++){
+    var el=document.getElementById(ids[i]);
+    if(el && typeof window[ids[i]]==='undefined') window[ids[i]]=el;
+  }
+})();
+</script>
+<script>
+
+let expenses=JSON.parse(MIGO_STORE.getItem('migos_expenses')||'[]');
+let customerSales=JSON.parse(MIGO_STORE.getItem('migos_customer_sales')||'[]');
+let salesHistory=JSON.parse(MIGO_STORE.getItem('migos_sales_history')||'[]');
+function saveSalesHistory(){MIGO_STORE.setItem('migos_sales_history',JSON.stringify(salesHistory))}
+function saveExpenses(){MIGO_STORE.setItem('migos_expenses',JSON.stringify(expenses))}
+function saveCustomerSales(){MIGO_STORE.setItem('migos_customer_sales',JSON.stringify(customerSales))}
+function localDateStr(d=new Date()){let y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
+
+function ensureCurrentBusinessDay(){
+  const today = localDateStr();
+  const lastDay = MIGO_STORE.getItem('migos_business_day');
+  if(!lastDay){
+    MIGO_STORE.setItem('migos_business_day', today);
+    return;
+  }
+  if(lastDay !== today){
+    // Reset only the "today" summary counters.
+    // Historical transactions remain preserved in salesHistory,
+    // and expenses remain stored by their own dates.
+    report = {sales:0,units:0,txns:0,cost:0,profit:0,cash:0,card:0};
+    MIGO_STORE.setItem('kidspos_report', JSON.stringify(report));
+    MIGO_STORE.setItem('migos_business_day', today);
+  }
+}
+
+function addExpense(){
+ let date=eDate.value||localDateStr(),category=eCategory.value,amount=Number(eAmount.value),payee=ePayee.value.trim(),note=eNote.value.trim();
+ if(!amount||amount<=0)return alert('請輸入支出金額');
+ expenses.push({id:Date.now(),date,category,amount,payee,note,admin:currentAdmin?currentAdmin.name:''});
+ saveExpenses();eAmount.value='';ePayee.value='';eNote.value='';renderExpenses();renderReport();alert('支出新增完成');
+}
+function deleteExpense(i){if(confirm('確定刪除此支出？')){expenses.splice(i,1);saveExpenses();renderExpenses();renderReport()}}
+function renderExpenses(){
+ let el=document.getElementById('expenseList'),sum=document.getElementById('expenseSummary');if(!el)return;
+ let today=localDateStr(), todayTotal=expenses.filter(e=>e.date===today).reduce((s,e)=>s+Number(e.amount||0),0);
+ let allTotal=expenses.reduce((s,e)=>s+Number(e.amount||0),0);
+ sum.innerHTML=`<div class="grid"><div class="card"><h3>今日支出</h3><div class="price">$${todayTotal.toLocaleString()}</div></div><div class="card"><h3>累計支出</h3><div class="price">$${allTotal.toLocaleString()}</div></div></div>`;
+ el.innerHTML=expenses.length?'<table class="dataTable"><tr><th>日期</th><th>分類</th><th>金額</th><th>對象</th><th>備註</th><th>操作</th></tr>'+
+ expenses.slice().reverse().map((e,ri)=>{let i=expenses.length-1-ri;return `<tr><td>${esc(e.date)}</td><td>${esc(e.category)}</td><td>$${Number(e.amount).toLocaleString()}</td><td>${esc(e.payee||'')}</td><td>${esc(e.note||'')}</td><td><button onclick="deleteExpense(${i})">刪除</button></td></tr>`}).join('')+'</table>':'<div class="card">目前沒有支出資料</div>';
+}
+function refreshCustomerOptions(){
+ let el=document.getElementById('checkoutCustomer');if(!el)return;
+ const cur=el.value;
+ el.innerHTML='<option value="">👤 一般客戶／未指定</option>'+customers.map(c=>`<option value="${c.id}">${esc(c.name||c.phone||'客戶')} ${c.phone?('｜'+esc(c.phone)):''}</option>`).join('');
+ el.value=cur;
+}
+
+
+let customers=JSON.parse(MIGO_STORE.getItem('migos_customers')||'[]');
+let suppliers=JSON.parse(MIGO_STORE.getItem('migos_suppliers')||'[]');
+
+function saveCustomers(){MIGO_STORE.setItem('migos_customers',JSON.stringify(customers))}
+function saveSuppliers(){MIGO_STORE.setItem('migos_suppliers',JSON.stringify(suppliers))}
+
+function refreshSupplierOptions(){
+ let el=document.getElementById('aSupplier'); if(!el)return;
+ const cur=el.value;
+ el.innerHTML='<option value="">未指定</option>'+suppliers.map(s=>`<option value="${esc(s.name)}">${esc(s.name)}</option>`).join('');
+ if([...el.options].some(o=>o.value===cur))el.value=cur;
+}
+
+
+function addCustomer(){
+ let name=cName.value.trim(),phone=cPhone.value.trim(),note=cNote.value.trim();
+ if(!name && !phone)return alert('請至少填寫姓名或手機');
+ customers.push({id:Date.now(),name,phone,note});
+ saveCustomers();refreshCustomerOptions();cName.value='';cPhone.value='';cNote.value='';renderCustomers();alert('客戶新增完成');
+}
+function deleteCustomer(i){
+ if(confirm('確定刪除此客戶？')){customers.splice(i,1);saveCustomers();refreshCustomerOptions();renderCustomers()}
+}
+function renderCustomers(){
+ let el=document.getElementById('customerList');if(!el)return;
+ el.innerHTML=customers.length?'<table class="dataTable"><tr><th>姓名</th><th>手機</th><th>備註</th><th>操作</th></tr>'+
+ customers.map((c,i)=>{let spent=customerSales.filter(s=>String(s.customerId)===String(c.id)).reduce((a,s)=>a+Number(s.amount||0),0);return `<tr><td>${esc(c.name||'')}</td><td>${esc(c.phone||'')}</td><td>${esc(c.note||'')}<br><small>累計消費 $${spent.toLocaleString()}</small></td><td><button onclick="deleteCustomer(${i})">刪除</button></td></tr>`}).join('')+
+ '</table>':'<div class="card">目前沒有客戶資料</div>';
+}
+
+function addSupplier(){
+ let name=sName.value.trim(),contact=sContact.value.trim(),phone=sPhone.value.trim(),taxId=sTaxId.value.trim(),address=sAddress.value.trim(),terms=sTerms.value.trim(),note=sNote.value.trim();
+ if(!name)return alert('請輸入廠商名稱');
+ suppliers.push({id:Date.now(),name,contact,phone,taxId,address,terms,note});
+ saveSuppliers();refreshSupplierOptions();sName.value='';sContact.value='';sPhone.value='';sTaxId.value='';sAddress.value='';sTerms.value='';sNote.value='';renderSuppliers();alert('廠商新增完成');
+}
+function deleteSupplier(i){
+ if(confirm('確定刪除此廠商？')){suppliers.splice(i,1);saveSuppliers();refreshSupplierOptions();renderSuppliers()}
+}
+function renderSuppliers(){
+ let el=document.getElementById('supplierList');if(!el)return;
+ el.innerHTML=suppliers.length?'<table class="dataTable"><tr><th>廠商</th><th>聯絡人</th><th>電話</th><th>統編</th><th>付款條件</th><th>操作</th></tr>'+
+ suppliers.map((s,i)=>`<tr><td>${esc(s.name||'')}</td><td>${esc(s.contact||'')}</td><td>${esc(s.phone||'')}</td><td>${esc(s.taxId||'')}</td><td>${esc(s.terms||'')}</td><td><button onclick="deleteSupplier(${i})">刪除</button></td></tr>`).join('')+
+ '</table>':'<div class="card">目前沒有廠商資料</div>';
+}
+
+
+function renderLastBackup(){
+ const el=document.getElementById('lastBackup');
+ if(el)el.textContent=MIGO_STORE.getItem('migos_last_backup')||'尚未備份';
+}
+
+function downloadBackup(){
+ const data={
+   app:"Migo's Select Shop",
+   version:12,
+   createdAt:new Date().toISOString(),
+   products,
+   report,
+   customers,
+   suppliers,
+   expenses,
+   customerSales,
+   salesHistory,
+   admins
+ };
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');
+ const d=new Date(), pad=n=>String(n).padStart(2,'0');
+ a.href=url;
+ a.download=`Migos_Select_Shop_備份_${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}.json`;
+ document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+ const stamp=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+ MIGO_STORE.setItem('migos_last_backup',stamp);
+ const lb=document.getElementById('lastBackup');if(lb)lb.textContent=stamp;
+}
+
+
+function normalizeProduct(p){
+ if(!p || typeof p!=='object') return null;
+ const sku=p.sku||p.itemNo||p.code||p.barcode||'';
+ const name=p.name||p.productName||p.title||'未命名商品';
+ const price=Number(p.price??p.salePrice??p.specialPrice??0);
+ const cost=Number(p.cost??p.purchaseCost??0);
+ const color=p.color||p.colour||'';
+ const category=p.category||p.type||'';
+ const season=p.season||p.seasonCategory||'未分類';
+ const supplier=p.supplier||p.vendor||p.supplierName||'';
+ let sizes=p.sizes||p.stockBySize||{};
+ if(Array.isArray(sizes)){
+   const obj={}; sizes.forEach(x=>{
+     if(typeof x==='string')obj[x]=0;
+     else if(x&&typeof x==='object')obj[x.size||x.name]=Number(x.stock??x.qty??x.quantity??0);
+   }); sizes=obj;
+ }
+ if(!sizes || typeof sizes!=='object')sizes={};
+ Object.keys(sizes).forEach(k=>sizes[k]=Number(sizes[k]||0));
+ return {...p,sku,name,price,cost,color,category,season,supplier,sizes,image:p.image||p.photo||p.imageData||''};
+}
+function normalizeReport(r){
+ r=(r&&typeof r==='object')?r:{};
+ return {sales:Number(r.sales??r.revenue??0),units:Number(r.units??r.quantity??0),txns:Number(r.txns??r.transactions??0),cost:Number(r.cost??r.cogs??0),profit:Number(r.profit??r.grossProfit??0),cash:Number(r.cash??r.cashSales??0),card:Number(r.card??r.cardSales??0)};
+}
+function migrateBackupData(data){
+ if(!data||typeof data!=='object')throw new Error('invalid backup');
+ const d={...data};
+ d.products=(d.products||d.items||d.productList||[]).map(normalizeProduct).filter(Boolean);
+ d.report=normalizeReport(d.report||d.todayReport||d.salesReport||{});
+ d.customers=d.customers||d.clients||d.customerList||[];
+ d.suppliers=d.suppliers||d.vendors||d.supplierList||[];
+ d.expenses=d.expenses||d.expenseList||[];
+ d.customerSales=d.customerSales||d.customerHistory||[];
+ d.salesHistory=normalizeSalesHistoryRows(d.salesHistory||d.transactions||d.sales||[]);
+ d.admins=d.admins||d.managers||d.users||[];
+ // Old versions may have only today's aggregate report and no transaction history.
+ // Keep the aggregate report intact rather than discarding it.
+ return d;
+}
+
+
+
+function normalizeSalesHistoryRows(rows){
+  return (Array.isArray(rows)?rows:[]).map(x=>({
+    ...x,
+    total:Number(x.total??x.amount??0),
+    subtotal:Number(x.subtotal??x.total??x.amount??0),
+    discount:Number(x.discount||0),
+    cost:Number(x.cost||0),
+    profit:Number(x.profit??(Number(x.total??x.amount??0)-Number(x.cost||0))),
+    units:Number(x.units??x.quantity??0),
+    txns:Number(x.txns??x.transactions??1)
+  }));
+}
+
+function ensureAug8HistoryFromOldBackup(data){
+  if(!data || typeof data!=='object') return data;
+  const hasHistory = Array.isArray(data.salesHistory) && data.salesHistory.length>0;
+  const r = data.report || {};
+  const sales = Number(r.sales||0);
+  const units = Number(r.units||0);
+  const txns = Number(r.txns||0);
+  const cost = Number(r.cost||0);
+  const profit = Number(r.profit||Math.max(0,sales-cost));
+  const cash = Number(r.cash||0);
+  const card = Number(r.card||0);
+
+  if(!hasHistory && (sales>0 || units>0 || txns>0)){
+    const rows=[];
+    if(cash>0){
+      rows.push({
+        id:Date.now()+1,date:'2026-08-08',time:'歷史匯入',
+        subtotal:cash,discount:0,total:cash,
+        cost: sales>0 ? Math.round(cost*(cash/sales)) : 0,
+        profit: sales>0 ? Math.round(profit*(cash/sales)) : cash,
+        units: txns>0 ? Math.max(0,Math.round(units*(cash/sales||1))) : units,
+        txns: txns>0 ? Math.max(1,Math.round(txns*(cash/sales||1))) : 1,
+        method:'cash',admin:'舊備份匯入',items:[]
+      });
+    }
+    if(card>0){
+      rows.push({
+        id:Date.now()+2,date:'2026-08-08',time:'歷史匯入',
+        subtotal:card,discount:0,total:card,
+        cost: sales>0 ? Math.round(cost*(card/sales)) : 0,
+        profit: sales>0 ? Math.round(profit*(card/sales)) : card,
+        units: txns>0 ? Math.max(0,units-(rows[0]?.units||0)) : 0,
+        txns: txns>0 ? Math.max(1,txns-(rows[0]?.txns||0)) : 1,
+        method:'card',admin:'舊備份匯入',items:[]
+      });
+    }
+    if(rows.length===0 && sales>0){
+      rows.push({
+        id:Date.now()+3,date:'2026-08-08',time:'歷史匯入',
+        subtotal:sales,discount:0,total:sales,cost,profit,units,txns:txns||1,
+        method:'cash',admin:'舊備份匯入',items:[]
+      });
+    }
+    data.salesHistory=rows;
+  }
+  return data;
+}
+
+function restoreBackup(event){
+ const file=event.target.files[0];if(!file)return;
+ const r=new FileReader();
+ r.onload=()=>{
+   try{
+     const rawData=JSON.parse(r.result);let data=migrateBackupData(rawData);data=ensureAug8HistoryFromOldBackup(data);
+     if(!confirm('匯入備份會覆蓋目前資料，確定繼續？'))return;
+     if(Array.isArray(data.products)&&data.products.length)products=data.products;
+     if(data.report)report=data.report;
+     if(Array.isArray(data.customers))customers=data.customers;
+     if(Array.isArray(data.suppliers))suppliers=data.suppliers;
+     if(Array.isArray(data.expenses))expenses=data.expenses;
+     if(Array.isArray(data.customerSales))customerSales=data.customerSales;
+     if(Array.isArray(data.salesHistory))salesHistory=data.salesHistory;
+     if(Array.isArray(data.admins)&&data.admins.length)admins=data.admins;
+     save();saveCustomers();saveSuppliers();saveExpenses();saveCustomerSales();saveSalesHistory();saveAdmins();
+     renderAll();renderCustomers();renderSuppliers();renderAdmins();
+     const dd=document.getElementById('dailyReportDate');
+     const hs=document.getElementById('historyStartDate');
+     const he=document.getElementById('historyEndDate');
+     if(dd)dd.value='2026-08-08';
+     if(hs)hs.value='2026-08-08';
+     if(he)he.value='2026-08-08';
+     renderPeriodReports();
+     renderHistoricalDailyReports();
+     alert('備份匯入完成，已立即顯示 2026-08-08 營業資料');
+   }catch(e){alert('備份檔格式錯誤')}
+   event.target.value='';
+ };
+ r.readAsText(file);
+}
+
+
+const DEFAULT_ADMINS=[{user:'admin',name:'主要管理員',pass:'1234'}];
+let admins=JSON.parse(MIGO_STORE.getItem('migos_admins')||'null')||DEFAULT_ADMINS;
+let currentAdmin=null;
+function saveAdmins(){MIGO_STORE.setItem('migos_admins',JSON.stringify(admins))}
+function login(){
+ let u=document.getElementById('loginUser').value.trim(), p=document.getElementById('loginPass').value;
+ let a=admins.find(x=>x.user===u&&x.pass===p);
+ if(!a)return alert('帳號或密碼錯誤');
+ currentAdmin={user:a.user,name:a.name};
+ MIGO_SESSION.setItem('migos_current_admin',JSON.stringify(currentAdmin));
+ document.getElementById('loginOverlay').classList.add('hidden');
+ updateUserBadge(); renderAdmins();
+}
+function logout(){currentAdmin=null;MIGO_SESSION.removeItem('migos_current_admin');document.getElementById('loginPass').value='';document.getElementById('loginOverlay').classList.remove('hidden');updateUserBadge()}
+function updateUserBadge(){document.getElementById('userBadge').textContent=currentAdmin?('👤 '+currentAdmin.name):'未登入'}
+function addAdmin(){
+ let user=newAdminUser.value.trim(),name=newAdminName.value.trim(),pass=newAdminPass.value;
+ if(!user||!name||!pass)return alert('請完整填寫管理員資料');
+ if(admins.some(a=>a.user===user))return alert('此帳號已存在');
+ admins.push({user,name,pass});saveAdmins();newAdminUser.value='';newAdminName.value='';newAdminPass.value='';renderAdmins();alert('管理員新增完成');
+}
+function deleteAdmin(i){
+ if(admins.length<=1)return alert('至少要保留一個管理員帳號');
+ if(currentAdmin&&admins[i].user===currentAdmin.user)return alert('目前登入中的帳號不能刪除');
+ if(confirm('確定刪除此管理員？')){admins.splice(i,1);saveAdmins();renderAdmins()}
+}
+function renderAdmins(){
+ let el=document.getElementById('adminList'); if(!el)return;
+ el.innerHTML='<table class="adminTable"><tr><th>帳號</th><th>名稱</th><th>操作</th></tr>'+
+ admins.map((a,i)=>`<tr><td>${esc(a.user)}</td><td>${esc(a.name)}</td><td><button onclick="deleteAdmin(${i})">刪除</button></td></tr>`).join('')+'</table>';
+}
+function restoreLogin(){
+ try{currentAdmin=JSON.parse(MIGO_SESSION.getItem('migos_current_admin')||'null')}catch(e){}
+ if(currentAdmin){loginOverlay.classList.add('hidden')}else{loginOverlay.classList.remove('hidden')}
+ updateUserBadge(); renderAdmins();
+}
+
+const INITIAL=[];
+let products=JSON.parse(MIGO_STORE.getItem('kidspos_products')||'null')||INITIAL;
+let cart=[]; let report=JSON.parse(MIGO_STORE.getItem('kidspos_report')||'{"sales":0,"units":0,"txns":0,"cost":0,"profit":0,"cash":0,"card":0}');
+function save(){MIGO_STORE.setItem('kidspos_products',JSON.stringify(products));MIGO_STORE.setItem('kidspos_report',JSON.stringify(report))}
+function page(id,b){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');renderAll()}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function renderProducts(){
+ let q=(document.getElementById('search').value||'').toLowerCase(),sf=document.getElementById('seasonFilter')?.value||'';
+ let list=products.filter(p=>(p.sku+p.name+p.color).toLowerCase().includes(q)&&(!sf||(p.season||'')===sf));
+ document.getElementById('productGrid').innerHTML=list.map((p)=>{
+   let pi=products.indexOf(p);
+   let sizes=Object.entries(p.sizes).map(([s,n])=>`<button ${n<=0?'disabled':''} onclick="addCart(${pi},'${esc(s)}')">${esc(s)} (${n})</button>`).join('');
+   return `<div class="card">${p.image?`<img src="${p.image}">`:''}<h3>${esc(p.name)}</h3><div>${p.category?esc(p.category)+'｜':''}${esc(p.sku)}｜${esc(p.color)}</div><div class="price">$${p.price}</div><div class="sizeBtns">${sizes}</div></div>`
+ }).join('')||'<div class="card">找不到商品</div>';
+}
+function addCart(i,size){let p=products[i];if((p.sizes[size]||0)<=0)return alert('此尺寸已無庫存');let x=cart.find(x=>x.sku===p.sku&&x.size===size);let qty=x?x.qty:0;if(qty>=p.sizes[size])return alert('購物車數量已達現有庫存');if(x)x.qty++;else cart.push({sku:p.sku,name:p.name,color:p.color,size,price:p.price,qty:1});renderCart()}
+
+function getTotals(){
+ const subtotal=cart.reduce((s,x)=>s+x.price*x.qty,0);
+ const mode=document.getElementById('discountMode')?.value||'fixed';
+ let v=Number(document.getElementById('discountValue')?.value||0), discount=0;
+ if(mode==='percent'){v=Math.min(100,Math.max(0,v));discount=Math.round(subtotal*v/100)}
+ else if(mode==='amount'){discount=Math.min(subtotal,Math.max(0,v))}
+ const total=Math.max(0,subtotal-discount);
+ return {subtotal,discount,total,mode,value:v};
+}
+
+function renderCart(){
+ document.getElementById('cart').innerHTML=cart.length?cart.map((x,i)=>`<div class="row"><span><b>${esc(x.name)}</b><br>${esc(x.sku)}｜${esc(x.color)}｜${esc(x.size)}</span><span>${x.qty} × $${x.price} <button onclick="removeCart(${i})">✕</button></span></div>`).join(''):'尚未加入商品';
+ const z=getTotals();
+ const sub=document.getElementById('subtotal'),tot=document.getElementById('total'),da=document.getElementById('discountAmount'),dl=document.getElementById('discountLine'),hint=document.getElementById('discountHint');
+ if(sub)sub.textContent=z.subtotal.toLocaleString();
+ if(tot)tot.textContent=z.total.toLocaleString();
+ if(da)da.textContent=z.discount.toLocaleString();
+ if(dl)dl.style.display=z.discount>0?'block':'none';
+ if(hint)hint.textContent=z.mode==='fixed'?'商品原本設定的特價直接結帳':z.mode==='percent'?`臨時 ${z.value||0}% 折扣`:`臨時折抵 $${(z.value||0).toLocaleString()}`;
+}
+function removeCart(i){cart.splice(i,1);renderCart()} function clearCart(){cart=[];renderCart()}
+function checkout(method){ensureCurrentBusinessDay();
+ if(!cart.length)return alert('請先加入商品');
+ let totals=getTotals(),subtotal=totals.subtotal,total=totals.total,discountApplied=totals.discount;
+ let message='';
+ if(method==='cash'){
+   let pay=prompt(`應收 $${total.toLocaleString()}\n請輸入客人現金付款金額：`,total);
+   if(pay===null)return;
+   pay=Number(pay);
+   if(isNaN(pay)||pay<total)return alert('付款金額不足');
+   message=`結帳完成\n付款方式：現金\n商品小計 $${subtotal.toLocaleString()}\n折扣 -$${discountApplied.toLocaleString()}\n應收 $${total.toLocaleString()}\n收款 $${pay.toLocaleString()}\n找零 $${(pay-total).toLocaleString()}`;
+ }else{
+   if(!confirm(`刷卡金額 $${total.toLocaleString()}\n請確認刷卡機已交易成功，再按「確定」。`)) return;
+   message=`結帳完成\n付款方式：刷卡\n商品小計 $${subtotal.toLocaleString()}\n折扣 -$${discountApplied.toLocaleString()}\n金額 $${total.toLocaleString()}`;
+ }
+ cart.forEach(x=>{let p=products.find(p=>p.sku===x.sku);p.sizes[x.size]-=x.qty});
+ let costTotal=cart.reduce((sum,x)=>{let p=products.find(p=>p.sku===x.sku);return sum+Number(p?.cost||0)*x.qty},0);
+ report.sales+=total;
+ report.cost=(report.cost||0)+costTotal;
+ report.profit=(report.profit||0)+(total-costTotal);
+ report.units+=cart.reduce((s,x)=>s+x.qty,0);
+ report.txns++;
+ report.cash=(report.cash||0)+(method==='cash'?total:0);
+ report.card=(report.card||0)+(method==='card'?total:0);
+ let customerId=document.getElementById('checkoutCustomer')?.value||'';
+ if(customerId){
+   let c=customers.find(x=>String(x.id)===String(customerId));
+   customerSales.push({id:Date.now(),date:localDateStr(),customerId,customerName:c?.name||'',customerPhone:c?.phone||'',subtotal:subtotal,discount:discountApplied,amount:total,units:cart.reduce((s,x)=>s+x.qty,0),txns:1,method,admin:currentAdmin?currentAdmin.name:''});
+   saveCustomerSales();
+ }
+ salesHistory.push({id:Date.now(),date:localDateStr(),time:new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}),subtotal,discount:discountApplied,total,cost:costTotal,profit:total-costTotal,units:cart.reduce((s,x)=>s+x.qty,0),txns:1,method,admin:currentAdmin?currentAdmin.name:'',items:cart.map(x=>({sku:x.sku,name:x.name,size:x.size,qty:x.qty,price:x.price}))});
+ saveSalesHistory();
+ save();
+ alert(message);
+ cart=[];
+ if(document.getElementById('checkoutCustomer'))document.getElementById('checkoutCustomer').value='';
+ if(document.getElementById('discountMode'))document.getElementById('discountMode').value='fixed';
+ if(document.getElementById('discountValue'))document.getElementById('discountValue').value='';
+ renderAll()
+}
+function fileData(file){return new Promise((res,rej)=>{if(!file)return res('');let r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+async function addProduct(){let sku=aSku.value.trim(),name=aName.value.trim(),price=Number(aPrice.value),cost=Number(aCost.value||0),supplier=aSupplier.value,color=aColor.value.trim(),sizes=aSizes.value.split(',').map(x=>x.trim()).filter(Boolean),stock=Number(aStock.value);if(!sku||!name||!price||!color||!sizes.length||stock<0||cost<0)return alert('請完整填寫商品資料');if(products.some(p=>p.sku===sku))return alert('此貨號已存在');let image=await fileData(aImage.files[0]);let category=aCategory.value,season=aSeason.value;let sizeObj={};sizes.forEach(s=>sizeObj[s]=stock);products.push({sku,name,price,cost,supplier,color,category,season,sizes:sizeObj,image});save();alert('商品新增完成');aSku.value='';aName.value='';aPrice.value='';aCost.value='';aSupplier.value='';aColor.value='';aImage.value='';renderAll()}
+function renderManage(){manageGrid.innerHTML=products.map((p,i)=>`<div class="card">${p.image?`<img src="${p.image}">`:''}<h3>${esc(p.name)}</h3><div>${p.category?esc(p.category)+'｜':''}${esc(p.sku)}｜${esc(p.color)}</div><div class="price">售價 $${p.price}</div><p>季節：${esc(p.season||'未分類')}<br>成本：$${Number(p.cost||0).toLocaleString()}<br>單件毛利：$${Math.max(0,p.price-Number(p.cost||0)).toLocaleString()}<br>廠商：${esc(p.supplier||'未指定')}<br>尺寸：${Object.keys(p.sizes).join(' / ')}</p><button class="btn danger" onclick="delProduct(${i}); return false;">刪除商品</button></div>`).join('')}
+function delProduct(i){
+  var p=products[i];
+  if(!p) return false;
+  var ok=true;
+  try{ ok=window.confirm('確定刪除這個商品？\n\n'+(p.name||p.sku||'')); }catch(e){ ok=true; }
+  if(!ok) return false;
+  products.splice(i,1);
+  save();
+  renderAll();
+  return false;
+}
+function renderStock(){let rows=[];products.forEach(p=>Object.entries(p.sizes).forEach(([s,n])=>rows.push(`<tr><td>${esc(p.sku)}</td><td>${esc(p.name)}</td><td>${esc(p.color)}</td><td>${esc(s)}</td><td>${n}</td><td><button onclick="adjust('${esc(p.sku)}','${esc(s)}',1)">+1</button> <button onclick="adjust('${esc(p.sku)}','${esc(s)}',-1)">-1</button></td></tr>`)));stockWrap.innerHTML=`<table class="stockTable"><tr><th>貨號</th><th>商品</th><th>顏色</th><th>尺寸</th><th>庫存</th><th>調整</th></tr>${rows.join('')}</table>`}
+function adjust(sku,size,d){let p=products.find(p=>p.sku===sku);p.sizes[size]=Math.max(0,p.sizes[size]+d);save();renderAll()}
+
+function summarizeSales(list){const sales=list.reduce((s,x)=>s+Number(x.total||0),0),cost=list.reduce((s,x)=>s+Number(x.cost||0),0),profit=list.reduce((s,x)=>s+Number(x.profit||0),0),discount=list.reduce((s,x)=>s+Number(x.discount||0),0),units=list.reduce((s,x)=>s+Number(x.units||0),0),cash=list.filter(x=>x.method==='cash').reduce((s,x)=>s+Number(x.total||0),0),card=list.filter(x=>x.method==='card').reduce((s,x)=>s+Number(x.total||0),0);const txns=list.reduce((s,x)=>s+Number(x.txns??1),0);return {sales,cost,profit,discount,units,cash,card,txns}}
+function reportCards(x){let rate=x.sales?(x.profit/x.sales*100).toFixed(1):'0.0';return `<div class="grid"><div class="card"><h3>營業額</h3><div class="price">$${x.sales.toLocaleString()}</div></div><div class="card"><h3>交易筆數</h3><div class="price">${x.txns} 筆</div></div><div class="card"><h3>銷售件數</h3><div class="price">${x.units} 件</div></div><div class="card"><h3>現金</h3><div class="price">$${x.cash.toLocaleString()}</div></div><div class="card"><h3>刷卡</h3><div class="price">$${x.card.toLocaleString()}</div></div><div class="card"><h3>折扣</h3><div class="price">$${x.discount.toLocaleString()}</div></div><div class="card"><h3>成本</h3><div class="price">$${x.cost.toLocaleString()}</div></div><div class="card"><h3>毛利</h3><div class="price">$${x.profit.toLocaleString()}</div></div><div class="card"><h3>毛利率</h3><div class="price">${rate}%</div></div></div>`}
+
+function setHistoryThisMonth(){
+ const now=new Date(), y=now.getFullYear(), m=String(now.getMonth()+1).padStart(2,'0');
+ const first=`${y}-${m}-01`;
+ const last=new Date(y,now.getMonth()+1,0);
+ const end=`${y}-${m}-${String(last.getDate()).padStart(2,'0')}`;
+ historyStartDate.value=first;historyEndDate.value=end;renderHistoricalDailyReports();
+}
+function renderHistoricalDailyReports(){
+ const box=document.getElementById('historicalDailyBox'),a=document.getElementById('historyStartDate'),b=document.getElementById('historyEndDate');
+ if(!box||!a||!b)return;
+ if(!a.value||!b.value){
+   const today=localDateStr(), ym=today.slice(0,7);
+   a.value=ym+'-01';b.value=today;
+ }
+ const dates=[...new Set([
+   ...salesHistory.map(x=>x.date),
+   ...expenses.map(x=>x.date)
+ ])].filter(d=>d&&d>=a.value&&d<=b.value).sort().reverse();
+ if(!dates.length){box.innerHTML='<div class="card">這個日期範圍目前沒有營業或支出資料。</div>';return}
+ let rows=dates.map(d=>{
+   const s=summarizeSales(salesHistory.filter(x=>x.date===d));
+   const ex=expenses.filter(e=>e.date===d).reduce((z,e)=>z+Number(e.amount||0),0);
+   const net=s.profit-ex;
+   return `<tr><td>${esc(d)}</td><td>$${s.sales.toLocaleString()}</td><td>${s.txns}</td><td>${s.units}</td><td>$${s.cash.toLocaleString()}</td><td>$${s.card.toLocaleString()}</td><td>$${s.cost.toLocaleString()}</td><td>$${s.profit.toLocaleString()}</td><td>$${ex.toLocaleString()}</td><td>$${net.toLocaleString()}</td></tr>`;
+ }).join('');
+ box.innerHTML=`<div style="overflow:auto"><table class="dataTable"><tr><th>日期</th><th>營業額</th><th>筆數</th><th>件數</th><th>現金</th><th>刷卡</th><th>成本</th><th>毛利</th><th>支出</th><th>扣除支出後</th></tr>${rows}</table></div>`;
+}
+
+function renderPeriodReports(){let d=document.getElementById('dailyReportDate'),m=document.getElementById('monthlyReportMonth');if(!d||!m)return;if(!d.value)d.value=localDateStr();if(!m.value)m.value=localDateStr().slice(0,7);let ds=summarizeSales(salesHistory.filter(x=>x.date===d.value)),ms=summarizeSales(salesHistory.filter(x=>(x.date||'').slice(0,7)===m.value));let de=expenses.filter(e=>e.date===d.value).reduce((s,e)=>s+Number(e.amount||0),0),me=expenses.filter(e=>(e.date||'').slice(0,7)===m.value).reduce((s,e)=>s+Number(e.amount||0),0);dailyReportBox.innerHTML=`<h3>${esc(d.value)} 每日報表</h3>${reportCards(ds)}<div class="card" style="margin-top:10px"><b>支出：</b>$${de.toLocaleString()}　<b>扣除支出後：</b>$${(ds.profit-de).toLocaleString()}</div>`;monthlyReportBox.innerHTML=`<h3>${esc(m.value)} 每月報表</h3>${reportCards(ms)}<div class="card" style="margin-top:10px"><b>支出：</b>$${me.toLocaleString()}　<b>扣除支出後：</b>$${(ms.profit-me).toLocaleString()}</div>`}
+
+function renderReport(){
+ const today=localDateStr();
+ const todaySales=salesHistory.filter(x=>x.date===today);
+ const s=summarizeSales(todaySales);
+ const todayExpense=expenses.filter(e=>e.date===today).reduce((a,e)=>a+Number(e.amount||0),0);
+ sales.textContent=s.sales.toLocaleString();
+ units.textContent=s.units;
+ txns.textContent=s.txns;
+ cashSales.textContent=s.cash.toLocaleString();
+ cardSales.textContent=s.card.toLocaleString();
+ costSales.textContent=s.cost.toLocaleString();
+ profitSales.textContent=s.profit.toLocaleString();
+ profitRate.textContent=s.sales?((s.profit/s.sales)*100).toFixed(1):'0.0';
+ expenseSales.textContent=todayExpense.toLocaleString();
+ netProfit.textContent=(s.profit-todayExpense).toLocaleString();
+}
+function renderAll(){ensureCurrentBusinessDay();renderProducts();renderCart();renderManage();renderStock();renderReport();renderCustomers();renderSuppliers();renderAdmins();refreshSupplierOptions();refreshCustomerOptions();renderExpenses();renderLastBackup();renderPeriodReports();renderHistoricalDailyReports()}
+ensureCurrentBusinessDay();renderAll();renderCustomers();renderSuppliers();restoreLogin();if(document.getElementById('eDate'))eDate.value=localDateStr();
+
+window.addEventListener('focus',()=>{ensureCurrentBusinessDay();renderAll()});
+setInterval(()=>{const d=localDateStr();if(MIGO_STORE.getItem('migos_business_day')!==d){ensureCurrentBusinessDay();renderAll()}},60000);
+
+</script>
+
+<script>
+/* ===== Migo's Select Shop Supabase sync layer (2026-08-21) ===== */
+const MIGO_SUPABASE_URL = "https://lczbdazdicoyhqmemwbk.supabase.co";
+const MIGO_SUPABASE_KEY = "sb_publishable_k0SkzxkSRtqJ5893klJ3aw_DS-uf8Ld";
+const MIGO_API = MIGO_SUPABASE_URL + '/rest/v1';
+
+function setSyncBadge(text, ok=true){
+  const el=document.getElementById('syncBadge');
+  if(!el)return;
+  el.textContent=(ok?'☁️ ':'⚠️ ')+text;
+}
+
+async function sb(path, options={}){
+  const headers=Object.assign({
+    'apikey': MIGO_SUPABASE_KEY,
+    'Authorization': 'Bearer '+MIGO_SUPABASE_KEY,
+    'Content-Type': 'application/json'
+  }, options.headers||{});
+  const res=await fetch(MIGO_API+path, Object.assign({}, options, {headers}));
+  if(!res.ok){
+    const t=await res.text();
+    throw new Error('Supabase '+res.status+': '+t);
+  }
+  if(res.status===204)return null;
+  const txt=await res.text();
+  return txt?JSON.parse(txt):null;
+}
+
+function productRowsToProducts(rows){
+  const bySku={};
+  (rows||[]).forEach(r=>{
+    const sku=String(r.sku||'');
+    if(!sku)return;
+    if(!bySku[sku]) bySku[sku]={
+      sku,
+      name:r.name||'',
+      price:Number(r.price||0),
+      cost:Number(r.cost||0),
+      supplier:'',
+      color:r.color||'',
+      category:r.category||'',
+      season:r.season||'',
+      sizes:{},
+      image:r.image_url||''
+    };
+    bySku[sku].sizes[String(r.size||'')] = Number(r.stock||0);
+  });
+  return Object.values(bySku);
+}
+
+function productToRows(p){
+  return Object.entries(p.sizes||{}).map(([size,stock])=>({
+    sku:p.sku,
+    name:p.name,
+    price:Number(p.price||0),
+    cost:Number(p.cost||0),
+    size:String(size),
+    color:p.color||'',
+    stock:Number(stock||0),
+    season:p.season||'',
+    category:p.category||'',
+    image_url:p.image||''
+  }));
+}
+
+async function pullProducts(){
+  const rows=await sb('/products?select=*&order=id.asc');
+  products=productRowsToProducts(rows);
+  MIGO_STORE.setItem('kidspos_products',JSON.stringify(products));
+  renderAll();
+}
+
+async function insertProductToCloud(p){
+  const rows=productToRows(p);
+  if(!rows.length) throw new Error('商品沒有尺寸資料');
+  await sb('/products',{
+    method:'POST',
+    headers:{'Prefer':'return=representation'},
+    body:JSON.stringify(rows)
+  });
+}
+
+async function deleteProductFromCloud(sku){
+  await sb('/products?sku=eq.'+encodeURIComponent(String(sku)),{
+    method:'DELETE',
+    headers:{'Prefer':'return=minimal'}
+  });
+}
+
+async function patchStockToCloud(sku,size,stock){
+  await sb('/products?sku=eq.'+encodeURIComponent(String(sku))+'&size=eq.'+encodeURIComponent(String(size)),{
+    method:'PATCH',
+    headers:{'Prefer':'return=minimal'},
+    body:JSON.stringify({stock:Number(stock||0)})
+  });
+}
+
+async function pullSales(){
+  const rows=await sb('/sales?select=*&order=created_at.asc');
+  salesHistory=(rows||[]).map(r=>({
+    id:r.id,
+    date:(r.created_at||'').slice(0,10),
+    time:r.created_at?new Date(r.created_at).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}):'',
+    subtotal:Number(r.total||0)+Number(r.discount||0),
+    discount:Number(r.discount||0),
+    total:Number(r.total||0),
+    cost:Number(r.cost||0),
+    profit:Number(r.profit||0),
+    units:Array.isArray(r.items)?r.items.reduce((s,x)=>s+Number(x.qty||0),0):0,
+    txns:1,
+    method:r.payment_method||'cash',
+    admin:'',
+    items:Array.isArray(r.items)?r.items:[]
+  }));
+  saveSalesHistory();
+}
+
+async function pushSaleRecord(rec){
+  await sb('/sales',{
+    method:'POST',
+    headers:{'Prefer':'return=representation'},
+    body:JSON.stringify({
+      total:Number(rec.total||0),
+      cost:Number(rec.cost||0),
+      profit:Number(rec.profit||0),
+      payment_method:rec.method||'cash',
+      customer_name:rec.customerName||'',
+      discount:Number(rec.discount||0),
+      items:rec.items||[],
+      status:'completed',
+      note:''
+    })
+  });
+}
+
+let migoSyncBusy=false;
+async function cloudRefresh(){
+  if(migoSyncBusy) return;
+  try{
+    setSyncBadge('同步中');
+    await Promise.all([pullProducts(), pullSales()]);
+    setSyncBadge('已同步');
+    renderAll();
+  }catch(e){
+    console.error(e);
+    setSyncBadge('同步失敗－點我檢查',false);
+  }
+}
+
+const _localAddProduct = addProduct;
+addProduct = async function(){
+  if(migoSyncBusy) return alert('正在同步，請稍候再試');
+  const snapshot=JSON.parse(JSON.stringify(products));
+  const before=products.length;
+  migoSyncBusy=true;
+  try{
+    await _localAddProduct();
+    if(products.length<=before) return;
+    const added=products[products.length-1];
+    setSyncBadge('正在儲存商品');
+    await insertProductToCloud(added);
+    setSyncBadge('商品已同步');
+    await pullProducts();
+  }catch(e){
+    console.error(e);
+    products=snapshot;
+    save();
+    renderAll();
+    setSyncBadge('新增失敗－商品未儲存',false);
+    alert('商品沒有成功存到雲端，所以已保留原本資料。\n\n請點右上角同步狀態查看錯誤。\n\n'+(e?.message||e));
+  }finally{
+    migoSyncBusy=false;
+  }
+};
+
+const _localDelProduct = delProduct;
+delProduct = function(i){
+  if(migoSyncBusy){ alert('正在同步，請稍候再試'); return false; }
+  const p=products[i];
+  if(!p) return false;
+  let ok=true;
+  try{ ok=window.confirm('確定刪除這個商品？\n\n'+(p.name||p.sku||'')); }catch(e){}
+  if(!ok) return false;
+
+  migoSyncBusy=true;
+  setSyncBadge('正在刪除商品');
+  deleteProductFromCloud(p.sku).then(()=>{
+    products.splice(i,1);
+    save();
+    renderAll();
+    setSyncBadge('已同步');
+  }).catch(e=>{
+    console.error(e);
+    setSyncBadge('刪除失敗－資料未變更',false);
+    alert('雲端刪除失敗，所以商品沒有刪除。\n\n'+(e?.message||e));
+  }).finally(()=>{migoSyncBusy=false;});
+  return false;
+};
+
+const _localAdjust = adjust;
+adjust = function(sku,size,d){
+  if(migoSyncBusy) return alert('正在同步，請稍候再試');
+  const p=products.find(p=>p.sku===sku);
+  if(!p) return;
+  const old=Number(p.sizes[size]||0);
+  const next=Math.max(0,old+d);
+
+  p.sizes[size]=next;
+  save();
+  renderAll();
+
+  migoSyncBusy=true;
+  setSyncBadge('正在同步庫存');
+  patchStockToCloud(sku,size,next).then(()=>{
+    setSyncBadge('已同步');
+  }).catch(e=>{
+    console.error(e);
+    p.sizes[size]=old;
+    save();
+    renderAll();
+    setSyncBadge('庫存同步失敗－已還原',false);
+    alert('庫存沒有成功同步，已還原原本數量。\n\n'+(e?.message||e));
+  }).finally(()=>{migoSyncBusy=false;});
+};
+
+const _localCheckout = checkout;
+checkout = async function(method){
+  if(migoSyncBusy) return alert('正在同步，請稍候再結帳');
+
+  const productsBefore=JSON.parse(JSON.stringify(products));
+  const salesBefore=JSON.parse(JSON.stringify(salesHistory));
+  const reportBefore=JSON.parse(JSON.stringify(report));
+  const cartBefore=JSON.parse(JSON.stringify(cart));
+
+  _localCheckout(method);
+  if(salesHistory.length<=salesBefore.length) return;
+
+  const rec=salesHistory[salesHistory.length-1];
+  migoSyncBusy=true;
+  try{
+    setSyncBadge('正在同步結帳');
+    await pushSaleRecord(rec);
+    for(const item of (rec.items||[])){
+      const p=products.find(x=>x.sku===item.sku);
+      if(p) await patchStockToCloud(item.sku,item.size,p.sizes[item.size]);
+    }
+    setSyncBadge('已同步');
+  }catch(e){
+    console.error(e);
+    products=productsBefore;
+    salesHistory=salesBefore;
+    report=reportBefore;
+    cart=cartBefore;
+    save();
+    saveSalesHistory();
+    renderAll();
+    setSyncBadge('結帳同步失敗－已還原本機',false);
+    alert('這筆結帳沒有完整同步成功，本機資料已還原。\n請先不要重複結帳，點右上角同步狀態查看錯誤。\n\n'+(e?.message||e));
+  }finally{
+    migoSyncBusy=false;
+  }
+};
+
+window.addEventListener('focus',()=>cloudRefresh());
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)cloudRefresh()});
+setInterval(cloudRefresh,60000);
+setTimeout(cloudRefresh,600);
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var btn = document.querySelector('#loginOverlay button.primary');
+  if (btn) {
+    btn.addEventListener('click', function (e) {
+      if (typeof window.login === 'function') {
+        e.preventDefault();
+        window.login();
+      }
+    });
+  }
+});
+</script>
+
+
+<script>
+async function diagnosticRequest(path){
+  try{
+    const res=await fetch(MIGO_API+path,{
+      method:'GET',
+      headers:{
+        'apikey':MIGO_SUPABASE_KEY,
+        'Authorization':'Bearer '+MIGO_SUPABASE_KEY,
+        'Accept':'application/json'
+      }
+    });
+    const text=await res.text();
+    return {ok:res.ok,status:res.status,text:text};
+  }catch(e){
+    return {ok:false,status:0,text:String(e&&e.message?e.message:e)};
+  }
+}
+function prettyDiagnostic(label,r){
+  if(r.ok)return '✅ '+label+'：連線成功（HTTP '+r.status+'）';
+  let reason=r.text||'未知錯誤';
+  if(r.status===0) reason='iPad 無法送出網路請求：'+reason;
+  else if(r.status===401||r.status===403) reason='API Key 或 RLS 權限被拒絕。原始訊息：'+reason;
+  else if(r.status===404) reason='找不到資料表或 API 路徑。原始訊息：'+reason;
+  else if(r.status===400) reason='資料表欄位／查詢格式不符合。原始訊息：'+reason;
+  return '❌ '+label+'：失敗（HTTP '+r.status+'）\n'+reason;
+}
+async function runSyncDiagnostic(){
+  const box=document.getElementById('syncDiagnosticResult');
+  box.textContent='正在檢查，請稍候…';
+  const p=await diagnosticRequest('/products?select=id,sku,name,price,cost,size,color,stock,season,category,image_url&limit=1');
+  const s=await diagnosticRequest('/sales?select=id,created_at,total,cost,profit,payment_method,customer_name,discount,items,status,note&limit=1');
+  box.style.whiteSpace='pre-wrap';
+  box.textContent=
+    'Project URL：'+MIGO_SUPABASE_URL+'\n\n'+
+    prettyDiagnostic('products 商品表',p)+'\n\n'+
+    prettyDiagnostic('sales 銷售表',s);
+}
+function showSyncDiagnostic(){
+  document.getElementById('syncDiagnostic').classList.remove('hidden');
+  runSyncDiagnostic();
+}
+setTimeout(function(){
+  if(document.getElementById('syncBadge') && document.getElementById('syncBadge').textContent.includes('失敗')){
+    showSyncDiagnostic();
+  }
+},2500);
+</script>
+
+</body></html>
