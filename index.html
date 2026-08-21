@@ -212,6 +212,14 @@ nav button:hover{background:#f9dbe7}
 <button class="btn light" onclick="compressExistingProductImages(false)">🖼️ 壓縮現有商品照片／釋放空間</button>
 </div>
 <div class="note">建議每天打烊後備份一次，並把備份檔另外存到 iCloud Drive、USB 或其他雲端空間。<br><b>最近備份：</b><span id="lastBackup">尚未備份</span></div>
+<div class="card" style="margin-top:14px">
+  <h3 style="margin-top:0">📷 照片儲存空間估算</h3>
+  <div id="photoStorageSummary" style="font-size:18px;font-weight:800;margin:8px 0">正在計算…</div>
+  <div id="photoStorageDetail" style="line-height:1.7"></div>
+  <div style="height:12px;background:#f4e4ea;border-radius:999px;overflow:hidden;margin:10px 0"><div id="photoStorageBar" style="height:100%;width:0%;background:#d989a8"></div></div>
+  <small>這是依目前 iPad 瀏覽器本機資料量與已壓縮商品照片平均大小做的「保守估算」。Safari 實際可用容量可能因裝置與系統狀況不同。</small><br>
+  <button class="btn light" style="margin-top:10px" onclick="updatePhotoStorageMeter()">🔄 重新計算</button>
+</div>
 </div>
 </section>
 </main></div>
@@ -335,9 +343,47 @@ function renderSuppliers(){
 }
 
 
+function migoUtf8Bytes(str){
+ try{return new Blob([String(str||'')]).size}catch(e){return unescape(encodeURIComponent(String(str||''))).length}
+}
+function updatePhotoStorageMeter(){
+ const summary=document.getElementById('photoStorageSummary');
+ const detail=document.getElementById('photoStorageDetail');
+ const bar=document.getElementById('photoStorageBar');
+ if(!summary||!detail||!bar)return;
+ try{
+  let used=0;
+  try{
+   for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i),v=localStorage.getItem(k)||'';
+    used+=migoUtf8Bytes(k)+migoUtf8Bytes(v);
+   }
+  }catch(e){
+   const keys=['kidspos_products','migos_expenses','migos_customers','migos_suppliers','migos_sales_history','migos_customer_sales','migos_admins'];
+   keys.forEach(k=>{const v=MIGO_STORE.getItem(k)||'';used+=migoUtf8Bytes(k)+migoUtf8Bytes(v)});
+  }
+  const photoBytes=(products||[]).reduce((sum,p)=>sum+(p&&p.image?migoUtf8Bytes(p.image):0),0);
+  const photoCount=(products||[]).filter(p=>p&&p.image).length;
+  const avg=photoCount?photoBytes/photoCount:45000;
+  const assumedLimit=5*1024*1024; // conservative localStorage estimate only
+  const reserve=350*1024; // keep room for sales/customer/settings data
+  const free=Math.max(0,assumedLimit-used-reserve);
+  const remaining=Math.max(0,Math.floor(free/Math.max(avg,1)));
+  const pct=Math.max(0,Math.min(100,Math.round(used/assumedLimit*100)));
+  const mb=n=>(n/1024/1024).toFixed(2);
+  summary.textContent=`已使用約 ${mb(used)} MB／估算 5 MB（${pct}%）`;
+  detail.innerHTML=`目前有照片：<b>${photoCount} 張</b><br>平均壓縮後：約 <b>${Math.round(avg/1024)} KB／張</b><br>預估還可新增：約 <b>${remaining} 張照片</b><br><span style="font-size:12px">已另外保留約 0.34 MB 給營業額、庫存、客戶等資料。</span>`;
+  bar.style.width=pct+'%';
+ }catch(e){
+  summary.textContent='目前無法計算';
+  detail.textContent='照片仍可正常使用；請稍後重新整理再試。';
+ }
+}
+
 function renderLastBackup(){
  const el=document.getElementById('lastBackup');
  if(el)el.textContent=MIGO_STORE.getItem('migos_last_backup')||'尚未備份';
+ updatePhotoStorageMeter();
 }
 
 function downloadBackup(){
