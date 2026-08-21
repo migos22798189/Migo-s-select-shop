@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<!-- Migo's Select Shop 雙 iPad 安全同步修正版 2026-08-21；原正式版基底 2026-08-09 -->
+<!-- Migo's Select Shop 正式版 2026-08-09 -->
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Migo's Select Shop｜雙 iPad 安全同步修正版</title>
+<title>Migo's Select Shop</title>
 <style>
 *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;background:#fff7fa;color:#222}
 header{background:linear-gradient(135deg,#d989a8,#c96f94);color:#fff;padding:18px 22px;font-size:22px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
@@ -79,7 +79,7 @@ nav button:hover{background:#f9dbe7}
     <p style="font-size:12px">首次使用預設帳號：admin　密碼：1234<br>登入後請到「管理員」新增自己的帳號。</p>
   </div>
 </div>
-<header><span>🌸 Migo's Select Shop｜女裝・童裝</span><span style="display:flex;gap:8px;align-items:center"><span id="syncBadge" class="userBadge" onclick="showSyncDiagnostic()" style="cursor:pointer">☁️ 連線中</span><span id="userBadge" class="userBadge">未登入</span><button class="btn light" onclick="logout()">登出</button></span></header>
+<header><span>🌸 Migo's Select Shop｜女裝・童裝</span><span style="display:flex;gap:8px;align-items:center"><span id="userBadge" class="userBadge">未登入</span><button class="btn light" onclick="logout()">登出</button></span></header>
 <div class="app">
 <nav>
 <button class="active" onclick="page('pos',this)">🛒 結帳</button>
@@ -204,7 +204,7 @@ nav button:hover{background:#f9dbe7}
 
 <section id="backup" class="hidden">
 <h2>資料備份</h2>
-<div class="note"><b>舊備份相容：</b>可嘗試匯入先前版本產生的備份檔。系統會自動補齊成本、季節、廠商、支出、客戶消費與歷史報表等新版欄位；舊備份沒有的資料會使用安全預設值。</div><div class="note"><b>☁️ 雙 iPad 安全同步：</b>新增商品會先確認 Supabase 寫入成功；失敗時不會再讓商品突然消失。商品、庫存與銷售紀錄會同步到 Supabase。客戶、廠商、支出與管理員目前仍保存在本機；下一版可再接上雲端資料表。</div><div class="note"><b>8月8日匯入修正：</b>若舊備份只有「當日營業總額」而沒有歷史交易明細，匯入時會自動建立 2026-08-08 的歷史報表資料，匯入後立即顯示 8/8。</div><div class="form">
+<div class="note"><b>舊備份相容：</b>可嘗試匯入先前版本產生的備份檔。系統會自動補齊成本、季節、廠商、支出、客戶消費與歷史報表等新版欄位；舊備份沒有的資料會使用安全預設值。</div><div class="note"><b>8月8日匯入修正：</b>若舊備份只有「當日營業總額」而沒有歷史交易明細，匯入時會自動建立 2026-08-08 的歷史報表資料，匯入後立即顯示 8/8。</div><div class="form">
 <p>可將商品、庫存、營業報表、客戶、廠商、支出、客戶消費紀錄與管理員帳號一起備份成 JSON 檔；備份檔名會自動加入日期＋時間。</p>
 <div class="toolbar">
 <button class="btn primary" onclick="downloadBackup()">下載日期＋時間備份檔</button>
@@ -214,19 +214,6 @@ nav button:hover{background:#f9dbe7}
 </div>
 </section>
 </main></div>
-
-<div id="syncDiagnostic" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10000;padding:20px;overflow:auto">
-  <div style="max-width:760px;margin:40px auto;background:white;border-radius:18px;padding:22px">
-    <h2 style="margin-top:0">☁️ Supabase 連線檢查</h2>
-    <p>這個畫面只用來檢查連線，不會刪除商品或銷售資料。</p>
-    <div id="syncDiagnosticResult" class="note">準備檢查…</div>
-    <div class="toolbar">
-      <button class="btn primary" onclick="runSyncDiagnostic()">重新檢查</button>
-      <button class="btn light" onclick="document.getElementById('syncDiagnostic').classList.add('hidden')">關閉</button>
-    </div>
-  </div>
-</div>
-
 <script>
 /* iPad/WKWebView compatibility: expose element IDs as globals, as desktop Safari does. */
 (function(){
@@ -617,8 +604,31 @@ function checkout(method){ensureCurrentBusinessDay();
  if(document.getElementById('discountValue'))document.getElementById('discountValue').value='';
  renderAll()
 }
-function fileData(file){return new Promise((res,rej)=>{if(!file)return res('');let r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
-async function addProduct(){let sku=aSku.value.trim(),name=aName.value.trim(),price=Number(aPrice.value),cost=Number(aCost.value||0),supplier=aSupplier.value,color=aColor.value.trim(),sizes=aSizes.value.split(',').map(x=>x.trim()).filter(Boolean),stock=Number(aStock.value);if(!sku||!name||!price||!color||!sizes.length||stock<0||cost<0)return alert('請完整填寫商品資料');if(products.some(p=>p.sku===sku))return alert('此貨號已存在');let image=await fileData(aImage.files[0]);let category=aCategory.value,season=aSeason.value;let sizeObj={};sizes.forEach(s=>sizeObj[s]=stock);products.push({sku,name,price,cost,supplier,color,category,season,sizes:sizeObj,image});save();alert('商品新增完成');aSku.value='';aName.value='';aPrice.value='';aCost.value='';aSupplier.value='';aColor.value='';aImage.value='';renderAll()}
+function fileData(file){
+ return new Promise((res,rej)=>{
+  if(!file)return res('');
+  const r=new FileReader();
+  r.onerror=rej;
+  r.onload=()=>{
+   const img=new Image();
+   img.onerror=rej;
+   img.onload=()=>{
+    try{
+     const MAX=700;
+     let w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
+     const scale=Math.min(1,MAX/Math.max(w,h));
+     w=Math.max(1,Math.round(w*scale));h=Math.max(1,Math.round(h*scale));
+     const c=document.createElement('canvas');c.width=w;c.height=h;
+     const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);
+     res(c.toDataURL('image/jpeg',0.68));
+    }catch(e){rej(e)}
+   };
+   img.src=r.result;
+  };
+  r.readAsDataURL(file);
+ })
+}}
+async function addProduct(){let sku=aSku.value.trim(),name=aName.value.trim(),price=Number(aPrice.value),cost=Number(aCost.value||0),supplier=aSupplier.value,color=aColor.value.trim(),sizes=aSizes.value.split(',').map(x=>x.trim()).filter(Boolean),stock=Number(aStock.value);if(!sku||!name||!price||!color||!sizes.length||stock<0||cost<0)return alert('請完整填寫商品資料');if(products.some(p=>p.sku===sku))return alert('此貨號已存在');let image=await fileData(aImage.files[0]);let category=aCategory.value,season=aSeason.value;let sizeObj={};sizes.forEach(s=>sizeObj[s]=stock);products.push({sku,name,price,cost,supplier,color,category,season,sizes:sizeObj,image});try{save()}catch(e){products.pop();if(e&&(e.name==='QuotaExceededError'||String(e).toLowerCase().includes('quota')))return alert('儲存空間仍不足。請先備份資料，再刪除部分舊商品照片，或新增商品時先不要選照片。');throw e}alert('商品新增完成');aSku.value='';aName.value='';aPrice.value='';aCost.value='';aSupplier.value='';aColor.value='';aImage.value='';renderAll()}
 function renderManage(){manageGrid.innerHTML=products.map((p,i)=>`<div class="card">${p.image?`<img src="${p.image}">`:''}<h3>${esc(p.name)}</h3><div>${p.category?esc(p.category)+'｜':''}${esc(p.sku)}｜${esc(p.color)}</div><div class="price">售價 $${p.price}</div><p>季節：${esc(p.season||'未分類')}<br>成本：$${Number(p.cost||0).toLocaleString()}<br>單件毛利：$${Math.max(0,p.price-Number(p.cost||0)).toLocaleString()}<br>廠商：${esc(p.supplier||'未指定')}<br>尺寸：${Object.keys(p.sizes).join(' / ')}</p><button class="btn danger" onclick="delProduct(${i}); return false;">刪除商品</button></div>`).join('')}
 function delProduct(i){
   var p=products[i];
@@ -690,276 +700,6 @@ window.addEventListener('focus',()=>{ensureCurrentBusinessDay();renderAll()});
 setInterval(()=>{const d=localDateStr();if(MIGO_STORE.getItem('migos_business_day')!==d){ensureCurrentBusinessDay();renderAll()}},60000);
 
 </script>
-
-<script>
-/* ===== Migo's Select Shop Supabase sync layer (2026-08-21) ===== */
-const MIGO_SUPABASE_URL = "https://lczbdazdicoyhqmemwbk.supabase.co";
-const MIGO_SUPABASE_KEY = "sb_publishable_k0SkzxkSRtqJ5893klJ3aw_DS-uf8Ld";
-const MIGO_API = MIGO_SUPABASE_URL + '/rest/v1';
-
-function setSyncBadge(text, ok=true){
-  const el=document.getElementById('syncBadge');
-  if(!el)return;
-  el.textContent=(ok?'☁️ ':'⚠️ ')+text;
-}
-
-async function sb(path, options={}){
-  const headers=Object.assign({
-    'apikey': MIGO_SUPABASE_KEY,
-    'Authorization': 'Bearer '+MIGO_SUPABASE_KEY,
-    'Content-Type': 'application/json'
-  }, options.headers||{});
-  const res=await fetch(MIGO_API+path, Object.assign({}, options, {headers}));
-  if(!res.ok){
-    const t=await res.text();
-    throw new Error('Supabase '+res.status+': '+t);
-  }
-  if(res.status===204)return null;
-  const txt=await res.text();
-  return txt?JSON.parse(txt):null;
-}
-
-function productRowsToProducts(rows){
-  const bySku={};
-  (rows||[]).forEach(r=>{
-    const sku=String(r.sku||'');
-    if(!sku)return;
-    if(!bySku[sku]) bySku[sku]={
-      sku,
-      name:r.name||'',
-      price:Number(r.price||0),
-      cost:Number(r.cost||0),
-      supplier:'',
-      color:r.color||'',
-      category:r.category||'',
-      season:r.season||'',
-      sizes:{},
-      image:r.image_url||''
-    };
-    bySku[sku].sizes[String(r.size||'')] = Number(r.stock||0);
-  });
-  return Object.values(bySku);
-}
-
-function productToRows(p){
-  return Object.entries(p.sizes||{}).map(([size,stock])=>({
-    sku:p.sku,
-    name:p.name,
-    price:Number(p.price||0),
-    cost:Number(p.cost||0),
-    size:String(size),
-    color:p.color||'',
-    stock:Number(stock||0),
-    season:p.season||'',
-    category:p.category||'',
-    image_url:p.image||''
-  }));
-}
-
-async function pullProducts(){
-  const rows=await sb('/products?select=*&order=id.asc');
-  products=productRowsToProducts(rows);
-  MIGO_STORE.setItem('kidspos_products',JSON.stringify(products));
-  renderAll();
-}
-
-async function insertProductToCloud(p){
-  const rows=productToRows(p);
-  if(!rows.length) throw new Error('商品沒有尺寸資料');
-  await sb('/products',{
-    method:'POST',
-    headers:{'Prefer':'return=representation'},
-    body:JSON.stringify(rows)
-  });
-}
-
-async function deleteProductFromCloud(sku){
-  await sb('/products?sku=eq.'+encodeURIComponent(String(sku)),{
-    method:'DELETE',
-    headers:{'Prefer':'return=minimal'}
-  });
-}
-
-async function patchStockToCloud(sku,size,stock){
-  await sb('/products?sku=eq.'+encodeURIComponent(String(sku))+'&size=eq.'+encodeURIComponent(String(size)),{
-    method:'PATCH',
-    headers:{'Prefer':'return=minimal'},
-    body:JSON.stringify({stock:Number(stock||0)})
-  });
-}
-
-async function pullSales(){
-  const rows=await sb('/sales?select=*&order=created_at.asc');
-  salesHistory=(rows||[]).map(r=>({
-    id:r.id,
-    date:(r.created_at||'').slice(0,10),
-    time:r.created_at?new Date(r.created_at).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}):'',
-    subtotal:Number(r.total||0)+Number(r.discount||0),
-    discount:Number(r.discount||0),
-    total:Number(r.total||0),
-    cost:Number(r.cost||0),
-    profit:Number(r.profit||0),
-    units:Array.isArray(r.items)?r.items.reduce((s,x)=>s+Number(x.qty||0),0):0,
-    txns:1,
-    method:r.payment_method||'cash',
-    admin:'',
-    items:Array.isArray(r.items)?r.items:[]
-  }));
-  saveSalesHistory();
-}
-
-async function pushSaleRecord(rec){
-  await sb('/sales',{
-    method:'POST',
-    headers:{'Prefer':'return=representation'},
-    body:JSON.stringify({
-      total:Number(rec.total||0),
-      cost:Number(rec.cost||0),
-      profit:Number(rec.profit||0),
-      payment_method:rec.method||'cash',
-      customer_name:rec.customerName||'',
-      discount:Number(rec.discount||0),
-      items:rec.items||[],
-      status:'completed',
-      note:''
-    })
-  });
-}
-
-let migoSyncBusy=false;
-async function cloudRefresh(){
-  if(migoSyncBusy) return;
-  try{
-    setSyncBadge('同步中');
-    await Promise.all([pullProducts(), pullSales()]);
-    setSyncBadge('已同步');
-    renderAll();
-  }catch(e){
-    console.error(e);
-    setSyncBadge('同步失敗－點我檢查',false);
-  }
-}
-
-const _localAddProduct = addProduct;
-addProduct = async function(){
-  if(migoSyncBusy) return alert('正在同步，請稍候再試');
-  const snapshot=JSON.parse(JSON.stringify(products));
-  const before=products.length;
-  migoSyncBusy=true;
-  try{
-    await _localAddProduct();
-    if(products.length<=before) return;
-    const added=products[products.length-1];
-    setSyncBadge('正在儲存商品');
-    await insertProductToCloud(added);
-    setSyncBadge('商品已同步');
-    await pullProducts();
-  }catch(e){
-    console.error(e);
-    products=snapshot;
-    save();
-    renderAll();
-    setSyncBadge('新增失敗－商品未儲存',false);
-    alert('商品沒有成功存到雲端，所以已保留原本資料。\n\n請點右上角同步狀態查看錯誤。\n\n'+(e?.message||e));
-  }finally{
-    migoSyncBusy=false;
-  }
-};
-
-const _localDelProduct = delProduct;
-delProduct = function(i){
-  if(migoSyncBusy){ alert('正在同步，請稍候再試'); return false; }
-  const p=products[i];
-  if(!p) return false;
-  let ok=true;
-  try{ ok=window.confirm('確定刪除這個商品？\n\n'+(p.name||p.sku||'')); }catch(e){}
-  if(!ok) return false;
-
-  migoSyncBusy=true;
-  setSyncBadge('正在刪除商品');
-  deleteProductFromCloud(p.sku).then(()=>{
-    products.splice(i,1);
-    save();
-    renderAll();
-    setSyncBadge('已同步');
-  }).catch(e=>{
-    console.error(e);
-    setSyncBadge('刪除失敗－資料未變更',false);
-    alert('雲端刪除失敗，所以商品沒有刪除。\n\n'+(e?.message||e));
-  }).finally(()=>{migoSyncBusy=false;});
-  return false;
-};
-
-const _localAdjust = adjust;
-adjust = function(sku,size,d){
-  if(migoSyncBusy) return alert('正在同步，請稍候再試');
-  const p=products.find(p=>p.sku===sku);
-  if(!p) return;
-  const old=Number(p.sizes[size]||0);
-  const next=Math.max(0,old+d);
-
-  p.sizes[size]=next;
-  save();
-  renderAll();
-
-  migoSyncBusy=true;
-  setSyncBadge('正在同步庫存');
-  patchStockToCloud(sku,size,next).then(()=>{
-    setSyncBadge('已同步');
-  }).catch(e=>{
-    console.error(e);
-    p.sizes[size]=old;
-    save();
-    renderAll();
-    setSyncBadge('庫存同步失敗－已還原',false);
-    alert('庫存沒有成功同步，已還原原本數量。\n\n'+(e?.message||e));
-  }).finally(()=>{migoSyncBusy=false;});
-};
-
-const _localCheckout = checkout;
-checkout = async function(method){
-  if(migoSyncBusy) return alert('正在同步，請稍候再結帳');
-
-  const productsBefore=JSON.parse(JSON.stringify(products));
-  const salesBefore=JSON.parse(JSON.stringify(salesHistory));
-  const reportBefore=JSON.parse(JSON.stringify(report));
-  const cartBefore=JSON.parse(JSON.stringify(cart));
-
-  _localCheckout(method);
-  if(salesHistory.length<=salesBefore.length) return;
-
-  const rec=salesHistory[salesHistory.length-1];
-  migoSyncBusy=true;
-  try{
-    setSyncBadge('正在同步結帳');
-    await pushSaleRecord(rec);
-    for(const item of (rec.items||[])){
-      const p=products.find(x=>x.sku===item.sku);
-      if(p) await patchStockToCloud(item.sku,item.size,p.sizes[item.size]);
-    }
-    setSyncBadge('已同步');
-  }catch(e){
-    console.error(e);
-    products=productsBefore;
-    salesHistory=salesBefore;
-    report=reportBefore;
-    cart=cartBefore;
-    save();
-    saveSalesHistory();
-    renderAll();
-    setSyncBadge('結帳同步失敗－已還原本機',false);
-    alert('這筆結帳沒有完整同步成功，本機資料已還原。\n請先不要重複結帳，點右上角同步狀態查看錯誤。\n\n'+(e?.message||e));
-  }finally{
-    migoSyncBusy=false;
-  }
-};
-
-window.addEventListener('focus',()=>cloudRefresh());
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)cloudRefresh()});
-setInterval(cloudRefresh,60000);
-setTimeout(cloudRefresh,600);
-</script>
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var btn = document.querySelector('#loginOverlay button.primary');
@@ -972,55 +712,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
-</script>
-
-
-<script>
-async function diagnosticRequest(path){
-  try{
-    const res=await fetch(MIGO_API+path,{
-      method:'GET',
-      headers:{
-        'apikey':MIGO_SUPABASE_KEY,
-        'Authorization':'Bearer '+MIGO_SUPABASE_KEY,
-        'Accept':'application/json'
-      }
-    });
-    const text=await res.text();
-    return {ok:res.ok,status:res.status,text:text};
-  }catch(e){
-    return {ok:false,status:0,text:String(e&&e.message?e.message:e)};
-  }
-}
-function prettyDiagnostic(label,r){
-  if(r.ok)return '✅ '+label+'：連線成功（HTTP '+r.status+'）';
-  let reason=r.text||'未知錯誤';
-  if(r.status===0) reason='iPad 無法送出網路請求：'+reason;
-  else if(r.status===401||r.status===403) reason='API Key 或 RLS 權限被拒絕。原始訊息：'+reason;
-  else if(r.status===404) reason='找不到資料表或 API 路徑。原始訊息：'+reason;
-  else if(r.status===400) reason='資料表欄位／查詢格式不符合。原始訊息：'+reason;
-  return '❌ '+label+'：失敗（HTTP '+r.status+'）\n'+reason;
-}
-async function runSyncDiagnostic(){
-  const box=document.getElementById('syncDiagnosticResult');
-  box.textContent='正在檢查，請稍候…';
-  const p=await diagnosticRequest('/products?select=id,sku,name,price,cost,size,color,stock,season,category,image_url&limit=1');
-  const s=await diagnosticRequest('/sales?select=id,created_at,total,cost,profit,payment_method,customer_name,discount,items,status,note&limit=1');
-  box.style.whiteSpace='pre-wrap';
-  box.textContent=
-    'Project URL：'+MIGO_SUPABASE_URL+'\n\n'+
-    prettyDiagnostic('products 商品表',p)+'\n\n'+
-    prettyDiagnostic('sales 銷售表',s);
-}
-function showSyncDiagnostic(){
-  document.getElementById('syncDiagnostic').classList.remove('hidden');
-  runSyncDiagnostic();
-}
-setTimeout(function(){
-  if(document.getElementById('syncBadge') && document.getElementById('syncBadge').textContent.includes('失敗')){
-    showSyncDiagnostic();
-  }
-},2500);
 </script>
 
 </body></html>
